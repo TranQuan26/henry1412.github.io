@@ -1,0 +1,10 @@
+# Render deployment configuration
+service: web
+env: node
+buildCommand: npm install
+startCommand: npm start
+envVars:
+  - key: NODE_ENV
+    value: production
+  - key: PORT
+    generateValue: true
