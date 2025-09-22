@@ -47,6 +47,142 @@
             font-style: italic;
             margin-top: 1rem;
         }
+        
+        .todo-section {
+            margin-top: 3rem;
+            text-align: left;
+        }
+        
+        .todo-header {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+        }
+        
+        .todo-input {
+            display: flex;
+            margin-bottom: 2rem;
+            gap: 10px;
+        }
+        
+        .todo-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+        
+        .todo-input input:focus {
+            border-color: #2980b9;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .todo-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .todo-item {
+            background: #f8f9fa;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        
+        .todo-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .todo-item.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+            border-left-color: #27ae60;
+        }
+        
+        .todo-text {
+            flex: 1;
+            margin-right: 10px;
+        }
+        
+        .todo-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-complete {
+            background: #27ae60;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-complete:hover {
+            background: #229954;
+        }
+        
+        .btn-delete {
+            background: #e74c3c;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 2rem;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -55,6 +191,130 @@
         <div class="hello-world">Hello World!</div>
         <p class="subtitle">Chào mừng bạn đến với GitHub Pages!</p>
         <p>Đây là bước đầu để xây dựng ứng dụng quản lý công việc của bạn.</p>
+        
+        <div class="todo-section">
+            <h2 class="todo-header">📝 Todo List</h2>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="total-count">0</div>
+                    <div class="stat-label">Tổng cộng</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="completed-count">0</div>
+                    <div class="stat-label">Hoàn thành</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="pending-count">0</div>
+                    <div class="stat-label">Còn lại</div>
+                </div>
+            </div>
+            
+            <div class="todo-input">
+                <input type="text" id="todo-text" placeholder="Nhập công việc mới..." maxlength="100">
+                <button class="btn" onclick="addTodo()">Thêm</button>
+            </div>
+            
+            <ul class="todo-list" id="todo-list">
+                <li class="empty-state" id="empty-state">
+                    Chưa có công việc nào. Hãy thêm công việc đầu tiên! 🚀
+                </li>
+            </ul>
+        </div>
     </div>
+    
+    <script>
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+        let nextId = parseInt(localStorage.getItem('nextId')) || 1;
+        
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+            localStorage.setItem('nextId', nextId.toString());
+        }
+        
+        function updateStats() {
+            const total = todos.length;
+            const completed = todos.filter(todo => todo.completed).length;
+            const pending = total - completed;
+            
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('completed-count').textContent = completed;
+            document.getElementById('pending-count').textContent = pending;
+        }
+        
+        function renderTodos() {
+            const todoList = document.getElementById('todo-list');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (todos.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            todoList.innerHTML = todos.map(todo => `
+                <li class="todo-item ${todo.completed ? 'completed' : ''}">
+                    <span class="todo-text">${todo.text}</span>
+                    <div class="todo-actions">
+                        <button class="btn btn-complete" onclick="toggleTodo(${todo.id})">
+                            ${todo.completed ? '↩️ Hoàn tác' : '✅ Hoàn thành'}
+                        </button>
+                        <button class="btn btn-delete" onclick="deleteTodo(${todo.id})">🗑️ Xóa</button>
+                    </div>
+                </li>
+            `).join('');
+            
+            updateStats();
+        }
+        
+        function addTodo() {
+            const input = document.getElementById('todo-text');
+            const text = input.value.trim();
+            
+            if (!text) {
+                alert('Vui lòng nhập nội dung công việc!');
+                return;
+            }
+            
+            todos.push({
+                id: nextId++,
+                text: text,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+            
+            input.value = '';
+            saveTodos();
+            renderTodos();
+        }
+        
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveTodos();
+                renderTodos();
+            }
+        }
+        
+        function deleteTodo(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
+                todos = todos.filter(t => t.id !== id);
+                saveTodos();
+                renderTodos();
+            }
+        }
+        
+        // Cho phép thêm todo bằng phím Enter
+        document.getElementById('todo-text').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+        
+        // Khởi tạo
+        renderTodos();
+    </script>
 </body>
 </html>
