@@ -5,16 +5,16 @@ class FirebaseAuthService {
         this.initialized = false;
         this.authStateCallbacks = [];
         
-        // Đợi Firebase config load xong
-        this.waitForFirebase().then(() => {
+        // Lắng nghe Firebase ready event
+        window.addEventListener('firebaseReady', () => {
+            console.log('🔥 Firebase ready event received, initializing auth service...');
             this.init();
         });
-    }
-    
-    async waitForFirebase() {
-        // Đợi Firebase được load
-        while (!window.FirebaseUtils) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Fallback: nếu Firebase đã ready
+        if (window.FirebaseUtils) {
+            console.log('🔥 Firebase already ready, initializing auth service...');
+            this.init();
         }
     }
     
@@ -71,9 +71,7 @@ class FirebaseAuthService {
         
         return new Promise((resolve, reject) => {
             const check = () => {
-                const { ready } = this.checkFirebaseStatus();
-                
-                if (ready) {
+                if (window.FirebaseUtils && window.googleProvider) {
                     console.log('✅ Firebase is ready!');
                     resolve(true);
                 } else if (Date.now() - startTime > timeout) {
@@ -88,7 +86,7 @@ class FirebaseAuthService {
         });
     }
     
-    // Đăng nhập với Google (cải thiện)
+    // Đăng nhập với Google
     async signInWithGoogle() {
         try {
             console.log('🔍 Starting Google sign in...');
@@ -101,7 +99,9 @@ class FirebaseAuthService {
             const user = result.user;
             
             console.log('✅ Google sign in successful:', user.email);
-            Utils.showNotification(`Chào mừng ${user.displayName || user.email}!`, 'success');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification(`Chào mừng ${user.displayName || user.email}!`, 'success');
+            }
             return user;
         } catch (error) {
             console.error('❌ Google sign in error:', error);
@@ -137,12 +137,14 @@ class FirebaseAuthService {
                         message = 'Firebase chưa sẵn sàng! Vui lòng refresh trang và thử lại.';
                     } else if (error.message.includes('Firebase not initialized')) {
                         message = 'Firebase chưa được khởi tạo! Vui lòng refresh trang.';
-                    } else if (error.message.includes('Google provider not configured')) {
-                        message = 'Google provider chưa được cấu hình!';
                     }
             }
             
-            Utils.showNotification(message, 'error');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification(message, 'error');
+            } else {
+                alert(message);
+            }
             
             // Log chi tiết cho debug
             this.checkFirebaseStatus();
@@ -156,7 +158,9 @@ class FirebaseAuthService {
             const result = await window.FirebaseUtils.signInWithEmail(email, password);
             const user = result.user;
             
-            Utils.showNotification(`Chào mừng ${user.email}!`, 'success');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification(`Chào mừng ${user.email}!`, 'success');
+            }
             return user;
         } catch (error) {
             console.error('Email sign in error:', error);
@@ -177,7 +181,11 @@ class FirebaseAuthService {
                     break;
             }
             
-            Utils.showNotification(message, 'error');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification(message, 'error');
+            } else {
+                alert(message);
+            }
             throw error;
         }
     }
@@ -188,7 +196,9 @@ class FirebaseAuthService {
             const result = await window.FirebaseUtils.signUpWithEmail(email, password);
             const user = result.user;
             
-            Utils.showNotification(`Đăng ký thành công! Chào mừng ${user.email}!`, 'success');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification(`Đăng ký thành công! Chào mừng ${user.email}!`, 'success');
+            }
             return user;
         } catch (error) {
             console.error('Email sign up error:', error);
@@ -206,7 +216,11 @@ class FirebaseAuthService {
                     break;
             }
             
-            Utils.showNotification(message, 'error');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification(message, 'error');
+            } else {
+                alert(message);
+            }
             throw error;
         }
     }
@@ -215,10 +229,14 @@ class FirebaseAuthService {
     async signOut() {
         try {
             await window.FirebaseUtils.signOut();
-            Utils.showNotification('Đã đăng xuất!', 'success');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification('Đã đăng xuất!', 'success');
+            }
         } catch (error) {
             console.error('Sign out error:', error);
-            Utils.showNotification('Có lỗi khi đăng xuất!', 'error');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification('Có lỗi khi đăng xuất!', 'error');
+            }
             throw error;
         }
     }
@@ -292,14 +310,14 @@ class FirebaseAuthService {
                 <div class="auth-tab-content active" id="signin-tab">
                     <h3>🔐 Đăng nhập</h3>
                     
-                    <button class="auth-btn google-btn" onclick="authService.handleGoogleSignIn()">
+                    <button class="auth-btn google-btn" onclick="window.authService.handleGoogleSignIn()">
                         <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google">
                         Đăng nhập với Google
                     </button>
                     
                     <div class="auth-divider">hoặc</div>
                     
-                    <form class="auth-form" onsubmit="authService.handleEmailSignIn(event)">
+                    <form class="auth-form" onsubmit="window.authService.handleEmailSignIn(event)">
                         <input type="email" placeholder="Email" required>
                         <input type="password" placeholder="Mật khẩu" required>
                         <button type="submit" class="auth-btn primary">Đăng nhập</button>
@@ -309,14 +327,14 @@ class FirebaseAuthService {
                 <div class="auth-tab-content" id="signup-tab">
                     <h3>📝 Đăng ký</h3>
                     
-                    <button class="auth-btn google-btn" onclick="authService.handleGoogleSignIn()">
+                    <button class="auth-btn google-btn" onclick="window.authService.handleGoogleSignIn()">
                         <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google">
                         Đăng ký với Google
                     </button>
                     
                     <div class="auth-divider">hoặc</div>
                     
-                    <form class="auth-form" onsubmit="authService.handleEmailSignUp(event)">
+                    <form class="auth-form" onsubmit="window.authService.handleEmailSignUp(event)">
                         <input type="email" placeholder="Email" required>
                         <input type="password" placeholder="Mật khẩu (tối thiểu 6 ký tự)" required minlength="6">
                         <input type="password" placeholder="Xác nhận mật khẩu" required minlength="6">
@@ -363,7 +381,12 @@ class FirebaseAuthService {
             // Show loading state
             if (button) {
                 button.disabled = true;
-                button.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;"><div style="width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>Đang đăng nhập...</div>';
+                button.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <div style="width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        Đang đăng nhập...
+                    </div>
+                `;
             }
             
             console.log('🚀 Google sign in initiated from modal');
@@ -373,7 +396,6 @@ class FirebaseAuthService {
             document.querySelector('.auth-modal')?.remove();
         } catch (error) {
             console.error('❌ Modal Google sign in failed:', error);
-            // Don't show additional notification as signInWithGoogle already shows one
         } finally {
             // Restore button state
             if (button && originalText) {
@@ -408,7 +430,11 @@ class FirebaseAuthService {
         const confirmPassword = inputs[1].value;
         
         if (password !== confirmPassword) {
-            Utils.showNotification('Mật khẩu xác nhận không khớp!', 'error');
+            if (window.Utils && window.Utils.showNotification) {
+                window.Utils.showNotification('Mật khẩu xác nhận không khớp!', 'error');
+            } else {
+                alert('Mật khẩu xác nhận không khớp!');
+            }
             return;
         }
         
