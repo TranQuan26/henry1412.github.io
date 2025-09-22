@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Test - TaskManager</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/firebase-auth.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .test-result {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-family: monospace;
+        }
+        
+        .test-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .test-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .status-success { background: #28a745; color: white; }
+        .status-error { background: #dc3545; color: white; }
+        .status-warning { background: #ffc107; color: #212529; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <header style="text-align: center; margin-bottom: 2rem;">
+            <h1>🔥 Firebase Integration Test</h1>
+            <p>Kiểm tra tích hợp Firebase cho TaskManager</p>
+            <a href="../index.html" class="btn btn-primary">← Về trang chủ</a>
+        </header>
+
+        <!-- Firebase Config Test -->
+        <div class="test-section">
+            <h2>1. Firebase Configuration Test</h2>
+            <div id="config-results"></div>
+            <button class="btn btn-info" onclick="testFirebaseConfig()">🔍 Test Config</button>
+        </div>
+
+        <!-- Authentication Test -->
+        <div class="test-section">
+            <h2>2. Firebase Authentication Test</h2>
+            <div id="auth-results"></div>
+            <div class="test-buttons">
+                <button class="btn btn-success" onclick="testGoogleAuth()">🔐 Test Google Login</button>
+                <button class="btn btn-warning" onclick="authService?.showAuthModal()">📝 Show Auth Modal</button>
+                <button class="btn btn-secondary" onclick="authService?.signOut()">🚪 Sign Out</button>
+            </div>
+        </div>
+
+        <!-- Firestore Test -->
+        <div class="test-section">
+            <h2>3. Firestore Database Test</h2>
+            <div id="firestore-results"></div>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="testFirestore()">🗄️ Test Database</button>
+                <button class="btn btn-info" onclick="testMigration()">🔄 Test Migration</button>
+                <button class="btn btn-success" onclick="testBackup()">💾 Test Backup</button>
+            </div>
+        </div>
+
+        <!-- Real-time Test -->
+        <div class="test-section">
+            <h2>4. Real-time Sync Test</h2>
+            <div id="realtime-results"></div>
+            <button class="btn btn-warning" onclick="testRealtime()">⚡ Test Real-time</button>
+        </div>
+
+        <!-- Console Logs -->
+        <div class="test-section">
+            <h2>5. Console Logs</h2>
+            <div id="console-logs" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 1rem; border-radius: 5px; font-family: monospace; font-size: 0.9rem;"></div>
+            <button class="btn btn-secondary" onclick="clearLogs()">🧹 Clear Logs</button>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script src="../assets/js/main.js"></script>
+    <script type="module" src="../assets/js/firebase-config.js"></script>
+    <script src="../assets/js/firebase-auth.js"></script>
+    <script src="../assets/js/firebase-data.js"></script>
+
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const logs = [];
+
+        function captureLog(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.join(' ');
+            logs.push({ type, timestamp, message });
+            updateConsoleDisplay();
+        }
+
+        console.log = (...args) => {
+            originalLog(...args);
+            captureLog('log', ...args);
+        };
+
+        console.error = (...args) => {
+            originalError(...args);
+            captureLog('error', ...args);
+        };
+
+        console.warn = (...args) => {
+            originalWarn(...args);
+            captureLog('warn', ...args);
+        };
+
+        function updateConsoleDisplay() {
+            const container = document.getElementById('console-logs');
+            container.innerHTML = logs.map(log => {
+                const color = log.type === 'error' ? '#dc3545' : 
+                             log.type === 'warn' ? '#ffc107' : '#28a745';
+                return `<div style="color: ${color}; margin-bottom: 0.5rem;">
+                    [${log.timestamp}] ${log.type.toUpperCase()}: ${log.message}
+                </div>`;
+            }).reverse().join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearLogs() {
+            logs.length = 0;
+            updateConsoleDisplay();
+        }
+
+        // Test Functions
+        function addResult(containerId, status, message, details = '') {
+            const container = document.getElementById(containerId);
+            const statusClass = status === 'success' ? 'test-success' : 
+                               status === 'error' ? 'test-error' : 'test-warning';
+            const badge = `<span class="status-badge status-${status}">${status.toUpperCase()}</span>`;
+            
+            const resultHtml = `
+                <div class="test-result ${statusClass}">
+                    <strong>${message}</strong> ${badge}
+                    ${details ? `<br><small>${details}</small>` : ''}
+                </div>
+            `;
+            container.innerHTML += resultHtml;
+        }
+
+        async function testFirebaseConfig() {
+            const container = document.getElementById('config-results');
+            container.innerHTML = '<div class="test-result test-warning">🔍 Testing Firebase config...</div>';
+
+            try {
+                // Wait for Firebase to load
+                await new Promise(resolve => {
+                    const checkFirebase = () => {
+                        if (window.FirebaseUtils && window.firebaseApp) {
+                            resolve();
+                        } else {
+                            setTimeout(checkFirebase, 100);
+                        }
+                    };
+                    checkFirebase();
+                });
+
+                container.innerHTML = '';
+                
+                // Test Firebase App
+                if (window.firebaseApp) {
+                    addResult('config-results', 'success', '✅ Firebase App initialized', 
+                        `Project: ${window.firebaseApp.options.projectId}`);
+                } else {
+                    addResult('config-results', 'error', '❌ Firebase App not found');
+                }
+
+                // Test Auth
+                if (window.firebaseAuth) {
+                    addResult('config-results', 'success', '✅ Firebase Auth ready');
+                } else {
+                    addResult('config-results', 'error', '❌ Firebase Auth not ready');
+                }
+
+                // Test Firestore
+                if (window.firebaseDb) {
+                    addResult('config-results', 'success', '✅ Firestore ready');
+                } else {
+                    addResult('config-results', 'error', '❌ Firestore not ready');
+                }
+
+                // Test Analytics
+                if (window.firebaseAnalytics) {
+                    addResult('config-results', 'success', '✅ Firebase Analytics ready');
+                } else {
+                    addResult('config-results', 'warning', '⚠️ Firebase Analytics not ready');
+                }
+
+                // Test Services
+                if (window.authService) {
+                    addResult('config-results', 'success', '✅ Auth Service ready');
+                } else {
+                    addResult('config-results', 'error', '❌ Auth Service not ready');
+                }
+
+                if (window.dataService) {
+                    addResult('config-results', 'success', '✅ Data Service ready');
+                } else {
+                    addResult('config-results', 'error', '❌ Data Service not ready');
+                }
+
+            } catch (error) {
+                container.innerHTML = '';
+                addResult('config-results', 'error', '❌ Firebase config test failed', error.message);
+            }
+        }
+
+        async function testGoogleAuth() {
+            const container = document.getElementById('auth-results');
+            
+            if (!window.authService) {
+                addResult('auth-results', 'error', '❌ Auth Service not available');
+                return;
+            }
+
+            try {
+                addResult('auth-results', 'warning', '🔍 Testing Google Authentication...');
+                await window.authService.signInWithGoogle();
+                addResult('auth-results', 'success', '✅ Google Auth successful!');
+            } catch (error) {
+                if (error.code === 'auth/popup-closed-by-user') {
+                    addResult('auth-results', 'warning', '⚠️ Login popup closed by user');
+                } else {
+                    addResult('auth-results', 'error', '❌ Google Auth failed', error.message);
+                }
+            }
+        }
+
+        async function testFirestore() {
+            if (!window.dataService) {
+                addResult('firestore-results', 'error', '❌ Data Service not available');
+                return;
+            }
+
+            if (!window.authService?.isSignedIn()) {
+                addResult('firestore-results', 'warning', '⚠️ Please login first to test Firestore');
+                return;
+            }
+
+            try {
+                addResult('firestore-results', 'warning', '🔍 Testing Firestore operations...');
+
+                // Test save
+                const testData = [{
+                    id: 'test-' + Date.now(),
+                    title: 'Firebase Test Todo',
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                }];
+
+                await window.dataService.saveTodos(testData);
+                addResult('firestore-results', 'success', '✅ Save to Firestore successful');
+
+                // Test load
+                const loadedData = await window.dataService.loadTodos();
+                addResult('firestore-results', 'success', '✅ Load from Firestore successful', 
+                    `Loaded ${loadedData.length} items`);
+
+            } catch (error) {
+                addResult('firestore-results', 'error', '❌ Firestore test failed', error.message);
+            }
+        }
+
+        async function testMigration() {
+            if (!window.dataService) {
+                addResult('firestore-results', 'error', '❌ Data Service not available');
+                return;
+            }
+
+            if (!window.authService?.isSignedIn()) {
+                addResult('firestore-results', 'warning', '⚠️ Please login first to test migration');
+                return;
+            }
+
+            try {
+                addResult('firestore-results', 'warning', '🔍 Testing data migration...');
+                const result = await window.dataService.migrateFromLocalStorage();
+                
+                if (result) {
+                    addResult('firestore-results', 'success', '✅ Migration successful');
+                } else {
+                    addResult('firestore-results', 'warning', '⚠️ No data to migrate or already migrated');
+                }
+            } catch (error) {
+                addResult('firestore-results', 'error', '❌ Migration test failed', error.message);
+            }
+        }
+
+        async function testBackup() {
+            if (!window.dataService) {
+                addResult('firestore-results', 'error', '❌ Data Service not available');
+                return;
+            }
+
+            if (!window.authService?.isSignedIn()) {
+                addResult('firestore-results', 'warning', '⚠️ Please login first to test backup');
+                return;
+            }
+
+            try {
+                addResult('firestore-results', 'warning', '🔍 Testing backup functionality...');
+                const result = await window.dataService.createBackup();
+                
+                if (result) {
+                    addResult('firestore-results', 'success', '✅ Backup created successfully');
+                } else {
+                    addResult('firestore-results', 'warning', '⚠️ No data to backup');
+                }
+            } catch (error) {
+                addResult('firestore-results', 'error', '❌ Backup test failed', error.message);
+            }
+        }
+
+        function testRealtime() {
+            if (!window.dataService) {
+                addResult('realtime-results', 'error', '❌ Data Service not available');
+                return;
+            }
+
+            if (!window.authService?.isSignedIn()) {
+                addResult('realtime-results', 'warning', '⚠️ Please login first to test real-time');
+                return;
+            }
+
+            try {
+                addResult('realtime-results', 'warning', '🔍 Setting up real-time listener...');
+                
+                const unsubscribe = window.dataService.subscribeToUserData((data) => {
+                    addResult('realtime-results', 'success', '✅ Real-time update received', 
+                        `Data keys: ${Object.keys(data).join(', ')}`);
+                });
+
+                if (unsubscribe) {
+                    addResult('realtime-results', 'success', '✅ Real-time listener active');
+                    
+                    // Stop listener after 10 seconds
+                    setTimeout(() => {
+                        unsubscribe();
+                        addResult('realtime-results', 'warning', '⚠️ Real-time listener stopped (10s timeout)');
+                    }, 10000);
+                } else {
+                    addResult('realtime-results', 'error', '❌ Failed to setup real-time listener');
+                }
+            } catch (error) {
+                addResult('realtime-results', 'error', '❌ Real-time test failed', error.message);
+            }
+        }
+
+        // Auto-run config test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(testFirebaseConfig, 1000);
+            
+            // Listen for auth state changes
+            if (window.authService) {
+                window.authService.onAuthStateChanged((user) => {
+                    if (user) {
+                        addResult('auth-results', 'success', '✅ User authenticated', 
+                            `${user.displayName || user.email}`);
+                    } else {
+                        addResult('auth-results', 'warning', '⚠️ User not authenticated');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
