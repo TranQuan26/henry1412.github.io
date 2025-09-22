@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý thời gian - TaskManager</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        .time-blocks-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .time-block-settings {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        
+        .settings-row {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .setting-group label {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .time-input {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-width: 120px;
+        }
+        
+        .duration-select {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-width: 150px;
+            background: white;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .stats-bar {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-total { color: #667eea; }
+        .stat-completed { color: #27ae60; }
+        .stat-pending { color: #e74c3c; }
+        .stat-progress { color: #f39c12; }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        
+        .time-blocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .time-block {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            border-left: 5px solid #667eea;
+        }
+        
+        .time-block:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .time-block.completed {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+        }
+        
+        .time-block.in-progress {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #fff8e1 0%, #ffeaa7 100%);
+        }
+        
+        .time-block-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .time-block.completed .time-block-header {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+        
+        .time-block.in-progress .time-block-header {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+        
+        .time-range {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        
+        .time-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .time-block-content {
+            padding: 1.5rem;
+        }
+        
+        .task-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        .task-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .task-input.has-content {
+            border-color: #27ae60;
+            background: #f8fff8;
+        }
+        
+        .time-block-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .block-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+        
+        .task-progress {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .progress-bar {
+            width: 60px;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s ease;
+        }
+        
+        .current-time-indicator {
+            position: relative;
+        }
+        
+        .current-time-indicator::after {
+            content: '● Hiện tại';
+            position: absolute;
+            right: -80px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #7f8c8d;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .time-blocks-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .settings-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+            
+            .action-buttons {
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            
+            .current-time-indicator::after {
+                position: static;
+                display: block;
+                margin-top: 0.5rem;
+                transform: none;
+            }
+        }
+        
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .time-block {
+            animation: slideInUp 0.3s ease-out;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="logo">
+                🎯 TaskManager
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html">🏠 Trang chủ</a></li>
+                <li><a href="../pages/todo.html">📝 Công việc</a></li>
+                <li><a href="../pages/calendar.html">📅 Lịch</a></li>
+                <li><a href="../pages/time-blocks.html">⏰ Time Blocks</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="time-blocks-container">
+            <div class="page-header">
+                <h1 class="page-title">⏰ Quản lý thời gian theo khối</h1>
+                <p class="page-subtitle">Lên kế hoạch và theo dõi công việc theo từng khung thời gian cụ thể</p>
+            </div>
+
+            <!-- Settings -->
+            <div class="time-block-settings">
+                <div class="settings-row">
+                    <div class="setting-group">
+                        <label for="start-time">⏰ Thời gian bắt đầu</label>
+                        <input type="time" id="start-time" class="time-input" value="08:00">
+                    </div>
+                    <div class="setting-group">
+                        <label for="end-time">🕐 Thời gian kết thúc</label>
+                        <input type="time" id="end-time" class="time-input" value="20:00">
+                    </div>
+                    <div class="setting-group">
+                        <label for="block-duration">⏱️ Độ dài khối thời gian</label>
+                        <select id="block-duration" class="duration-select">
+                            <option value="10">10 phút</option>
+                            <option value="15">15 phút</option>
+                            <option value="20">20 phút</option>
+                            <option value="25">25 phút (Pomodoro)</option>
+                            <option value="30">30 phút</option>
+                            <option value="45">45 phút</option>
+                            <option value="60" selected>60 phút (1 giờ)</option>
+                        </select>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="generateTimeBlocks()">🔄 Tạo khối thời gian</button>
+                        <button class="btn btn-danger" onclick="clearAllTasks()">🗑️ Xóa tất cả</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-bar">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number stat-total" id="total-blocks">0</div>
+                        <div class="stat-label">Tổng khối</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number stat-completed" id="completed-blocks">0</div>
+                        <div class="stat-label">Hoàn thành</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number stat-pending" id="pending-blocks">0</div>
+                        <div class="stat-label">Còn lại</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number stat-progress" id="progress-percent">0%</div>
+                        <div class="stat-label">Tiến độ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Blocks Grid -->
+            <div class="time-blocks-grid" id="time-blocks-grid">
+                <div class="empty-state">
+                    <div class="empty-icon">⏰</div>
+                    <h3>Chưa có khối thời gian nào</h3>
+                    <p>Hãy thiết lập thời gian và nhấn "Tạo khối thời gian" để bắt đầu!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/main.js"></script>
+    <script>
+        let timeBlocks = [];
+        let currentSettings = {
+            startTime: '08:00',
+            endTime: '20:00',
+            blockDuration: 60
+        };
+        
+        function saveTimeBlocks() {
+            Utils.saveToLocalStorage('time-blocks', timeBlocks);
+            Utils.saveToLocalStorage('time-blocks-settings', currentSettings);
+        }
+        
+        function loadTimeBlocks() {
+            timeBlocks = Utils.getFromLocalStorage('time-blocks', []);
+            const savedSettings = Utils.getFromLocalStorage('time-blocks-settings', currentSettings);
+            currentSettings = { ...currentSettings, ...savedSettings };
+            
+            // Update UI with saved settings
+            document.getElementById('start-time').value = currentSettings.startTime;
+            document.getElementById('end-time').value = currentSettings.endTime;
+            document.getElementById('block-duration').value = currentSettings.blockDuration;
+        }
+        
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            const hour24 = parseInt(hours);
+            const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+            const ampm = hour24 >= 12 ? 'PM' : 'AM';
+            return `${hour12}:${minutes} ${ampm}`;
+        }
+        
+        function addMinutes(timeString, minutesToAdd) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            const totalMinutes = hours * 60 + minutes + minutesToAdd;
+            const newHours = Math.floor(totalMinutes / 60) % 24;
+            const newMinutes = totalMinutes % 60;
+            return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+        }
+        
+        function isCurrentTimeInBlock(startTime, endTime) {
+            const now = new Date();
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            return currentTime >= startTime && currentTime < endTime;
+        }
+        
+        function generateTimeBlocks() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const blockDuration = parseInt(document.getElementById('block-duration').value);
+            
+            if (!startTime || !endTime) {
+                Utils.showNotification('Vui lòng chọn thời gian bắt đầu và kết thúc!', 'warning');
+                return;
+            }
+            
+            if (startTime >= endTime) {
+                Utils.showNotification('Thời gian bắt đầu phải trước thời gian kết thúc!', 'warning');
+                return;
+            }
+            
+            currentSettings = { startTime, endTime, blockDuration };
+            
+            // Generate new time blocks
+            const newTimeBlocks = [];
+            let currentTime = startTime;
+            let blockIndex = 0;
+            
+            while (currentTime < endTime) {
+                const nextTime = addMinutes(currentTime, blockDuration);
+                const blockId = `${currentTime}-${nextTime}`;
+                
+                // Check if this block already exists in saved data
+                const existingBlock = timeBlocks.find(block => block.id === blockId);
+                
+                newTimeBlocks.push({
+                    id: blockId,
+                    startTime: currentTime,
+                    endTime: nextTime > endTime ? endTime : nextTime,
+                    task: existingBlock ? existingBlock.task : '',
+                    completed: existingBlock ? existingBlock.completed : false,
+                    index: blockIndex
+                });
+                
+                currentTime = nextTime;
+                blockIndex++;
+                
+                if (currentTime >= endTime) break;
+            }
+            
+            timeBlocks = newTimeBlocks;
+            saveTimeBlocks();
+            renderTimeBlocks();
+            updateStats();
+            Utils.showNotification(`Đã tạo ${timeBlocks.length} khối thời gian!`, 'success');
+        }
+        
+        function renderTimeBlocks() {
+            const grid = document.getElementById('time-blocks-grid');
+            
+            if (timeBlocks.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⏰</div>
+                        <h3>Chưa có khối thời gian nào</h3>
+                        <p>Hãy thiết lập thời gian và nhấn "Tạo khối thời gian" để bắt đầu!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = timeBlocks.map(block => {
+                const isCurrentBlock = isCurrentTimeInBlock(block.startTime, block.endTime);
+                const hasTask = block.task && block.task.trim().length > 0;
+                const blockClass = block.completed ? 'completed' : hasTask ? 'in-progress' : '';
+                
+                return `
+                    <div class="time-block ${blockClass} ${isCurrentBlock ? 'current-time-indicator pulse' : ''}">
+                        <div class="time-block-header">
+                            <div class="time-range">
+                                ${formatTime(block.startTime)} - ${formatTime(block.endTime)}
+                            </div>
+                            <div class="time-status">
+                                <div class="status-indicator"></div>
+                                ${block.completed ? 'Hoàn thành' : hasTask ? 'Đang làm' : 'Trống'}
+                            </div>
+                        </div>
+                        
+                        <div class="time-block-content">
+                            <textarea 
+                                class="task-input ${hasTask ? 'has-content' : ''}" 
+                                placeholder="Nhập công việc cho khung thời gian này..."
+                                onchange="updateTask('${block.id}', this.value)"
+                                onkeyup="autoSave('${block.id}', this.value)"
+                            >${block.task}</textarea>
+                            
+                            <div class="time-block-actions">
+                                <div class="task-progress">
+                                    <span>${block.task ? block.task.length : 0} ký tự</span>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${Math.min((block.task?.length || 0) / 100 * 100, 100)}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="block-controls">
+                                    <button 
+                                        class="btn ${block.completed ? 'btn-secondary' : 'btn-success'} btn-small"
+                                        onclick="toggleComplete('${block.id}')"
+                                    >
+                                        ${block.completed ? '↩️ Chưa xong' : '✅ Hoàn thành'}
+                                    </button>
+                                    <button 
+                                        class="btn btn-danger btn-small"
+                                        onclick="clearTask('${block.id}')"
+                                    >
+                                        🗑️ Xóa
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            updateStats();
+        }
+        
+        function updateTask(blockId, taskValue) {
+            const block = timeBlocks.find(b => b.id === blockId);
+            if (block) {
+                block.task = taskValue;
+                saveTimeBlocks();
+            }
+        }
+        
+        const autoSave = Utils.debounce((blockId, taskValue) => {
+            updateTask(blockId, taskValue);
+            renderTimeBlocks(); // Re-render to update styling
+        }, 500);
+        
+        function toggleComplete(blockId) {
+            const block = timeBlocks.find(b => b.id === blockId);
+            if (block) {
+                block.completed = !block.completed;
+                saveTimeBlocks();
+                renderTimeBlocks();
+                Utils.showNotification(
+                    block.completed ? 'Đã đánh dấu hoàn thành!' : 'Đã bỏ đánh dấu hoàn thành!',
+                    'success'
+                );
+            }
+        }
+        
+        function clearTask(blockId) {
+            if (confirm('Bạn có chắc chắn muốn xóa công việc trong khối thời gian này?')) {
+                const block = timeBlocks.find(b => b.id === blockId);
+                if (block) {
+                    block.task = '';
+                    block.completed = false;
+                    saveTimeBlocks();
+                    renderTimeBlocks();
+                    Utils.showNotification('Đã xóa công việc!', 'success');
+                }
+            }
+        }
+        
+        function clearAllTasks() {
+            if (confirm('Bạn có chắc chắn muốn xóa TẤT CẢ công việc và khối thời gian?')) {
+                timeBlocks = [];
+                saveTimeBlocks();
+                renderTimeBlocks();
+                Utils.showNotification('Đã xóa tất cả!', 'success');
+            }
+        }
+        
+        function updateStats() {
+            const total = timeBlocks.length;
+            const completed = timeBlocks.filter(block => block.completed).length;
+            const withTasks = timeBlocks.filter(block => block.task && block.task.trim().length > 0).length;
+            const pending = withTasks - completed;
+            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            document.getElementById('total-blocks').textContent = total;
+            document.getElementById('completed-blocks').textContent = completed;
+            document.getElementById('pending-blocks').textContent = Math.max(0, pending);
+            document.getElementById('progress-percent').textContent = progress + '%';
+        }
+        
+        // Auto-refresh current time indicator every minute
+        setInterval(() => {
+            if (timeBlocks.length > 0) {
+                renderTimeBlocks();
+            }
+        }, 60000); // Update every minute
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTimeBlocks();
+            if (timeBlocks.length > 0) {
+                renderTimeBlocks();
+            }
+        });
+    </script>
+</body>
+</html>

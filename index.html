@@ -54,7 +54,8 @@
         
         .feature-card:nth-child(1) { border-top-color: #3498db; }
         .feature-card:nth-child(2) { border-top-color: #e74c3c; }
-        .feature-card:nth-child(3) { border-top-color: #2ecc71; }
+        .feature-card:nth-child(3) { border-top-color: #f39c12; }
+        .feature-card:nth-child(4) { border-top-color: #2ecc71; }
         
         .feature-card:hover {
             transform: translateY(-10px);
@@ -138,6 +139,7 @@
                 <li><a href="/index.html">🏠 Trang chủ</a></li>
                 <li><a href="/pages/todo.html">📝 Công việc</a></li>
                 <li><a href="/pages/calendar.html">📅 Lịch</a></li>
+                <li><a href="/pages/time-blocks.html">⏰ Time Blocks</a></li>
             </ul>
         </div>
     </nav>
@@ -149,6 +151,7 @@
             <div class="hero-buttons">
                 <a href="/pages/todo.html" class="btn btn-primary">📝 Bắt đầu với Todo</a>
                 <a href="/pages/calendar.html" class="btn btn-success">📅 Xem lịch</a>
+                <a href="/pages/time-blocks.html" class="btn btn-danger">⏰ Time Blocks</a>
             </div>
         </section>
 
@@ -177,6 +180,16 @@
                         Xem lịch theo ngày, tuần hoặc tháng.
                     </p>
                     <a href="/pages/calendar.html" class="btn btn-danger">Xem lịch</a>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">⏰</div>
+                    <h3 class="feature-title">Time Blocks</h3>
+                    <p class="feature-description">
+                        Quản lý thời gian theo khối với các khoảng thời gian từ 
+                        10-60 phút. Lên kế hoạch chi tiết cho ngày làm việc.
+                    </p>
+                    <a href="/pages/time-blocks.html" class="btn btn-primary">Bắt đầu</a>
                 </div>
                 
                 <div class="feature-card">
@@ -222,15 +235,17 @@
         function loadStats() {
             const todos = Utils.getFromLocalStorage('todos', []);
             const events = Utils.getFromLocalStorage('calendar-events', []);
+            const timeBlocks = Utils.getFromLocalStorage('time-blocks', []);
             
             const totalTodos = todos.length;
             const completedTodos = todos.filter(todo => todo.completed).length;
             const totalEvents = events.length;
+            const completedBlocks = timeBlocks.filter(block => block.completed).length;
             const productivity = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
             
             document.getElementById('total-todos').textContent = totalTodos;
             document.getElementById('completed-todos').textContent = completedTodos;
-            document.getElementById('total-events').textContent = totalEvents;
+            document.getElementById('total-events').textContent = totalEvents + timeBlocks.length;
             document.getElementById('productivity').textContent = productivity + '%';
         }
         
