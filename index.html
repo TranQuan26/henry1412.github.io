@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang chủ - Quản lý công việc</title>
     <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/firebase-auth.css">
     <style>
         .hero-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -211,6 +212,25 @@
                 <li><a href="/pages/time-blocks.html">⏰ Time Blocks</a></li>
                 <li><a href="/pages/statistics.html">📊 Thống kê</a></li>
             </ul>
+            
+            <!-- Auth UI -->
+            <div class="auth-section">
+                <!-- Hiển thị khi chưa đăng nhập -->
+                <div class="auth-container">
+                    <button class="btn btn-primary btn-small" onclick="authService.showAuthModal()">
+                        🔐 Đăng nhập
+                    </button>
+                </div>
+                
+                <!-- Hiển thị khi đã đăng nhập -->
+                <div class="user-info" style="display: none;">
+                    <img class="user-avatar" src="" alt="User" width="32" height="32" style="border-radius: 50%; margin-right: 8px;">
+                    <span class="user-name"></span>
+                    <button class="btn btn-secondary btn-small" onclick="authService.signOut()" style="margin-left: 8px;">
+                        🚪 Đăng xuất
+                    </button>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -280,7 +300,10 @@
 
         <section class="stats-section">
             <h2 class="page-title">📈 Thống kê sử dụng</h2>
-            <p class="page-subtitle">Dữ liệu được lưu trữ trên trình duyệt của bạn</p>
+            <p class="page-subtitle">
+                <span class="offline-mode">Dữ liệu được lưu trữ trên trình duyệt của bạn</span>
+                <span class="online-mode" style="display: none;">Dữ liệu được đồng bộ với Firebase Cloud</span>
+            </p>
             
             <div class="stats-grid">
                 <div class="stat-item">
@@ -300,35 +323,110 @@
                     <div class="stat-label">Năng suất</div>
                 </div>
             </div>
+            
+            <!-- Cloud Features -->
+            <div class="cloud-features" style="margin-top: 2rem; display: none;">
+                <div class="feature-buttons" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-info btn-small" onclick="dataService.migrateFromLocalStorage()">
+                        ☁️ Chuyển dữ liệu lên Cloud
+                    </button>
+                    <button class="btn btn-success btn-small" onclick="dataService.createBackup()">
+                        💾 Tạo Backup
+                    </button>
+                </div>
+                <p style="text-align: center; margin-top: 1rem; color: #7f8c8d; font-size: 0.9rem;">
+                    🔐 Dữ liệu của bạn được mã hóa và bảo mật với Firebase
+                </p>
+            </div>
         </section>
     </div>
 
     <script src="assets/js/main.js"></script>
+    
+    <!-- Firebase Scripts -->
+    <script type="module" src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/firebase-auth.js"></script>
+    <script src="assets/js/firebase-data.js"></script>
+    
     <script>
-        // Load thống kê từ localStorage
-        function loadStats() {
-            const todos = Utils.getFromLocalStorage('todos', []);
-            const events = Utils.getFromLocalStorage('calendar-events', []);
-            const timeBlocks = Utils.getFromLocalStorage('time-blocks', []);
-            
-            const totalTodos = todos.length;
-            const completedTodos = todos.filter(todo => todo.completed).length;
-            const totalEvents = events.length;
-            const completedBlocks = timeBlocks.filter(block => block.completed).length;
-            const productivity = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
-            
-            document.getElementById('total-todos').textContent = totalTodos;
-            document.getElementById('completed-todos').textContent = completedTodos;
-            document.getElementById('total-events').textContent = totalEvents + timeBlocks.length;
-            document.getElementById('productivity').textContent = productivity + '%';
+        // Load thống kê từ localStorage hoặc Firebase
+        async function loadStats() {
+            try {
+                let todos = [];
+                let events = [];
+                let timeBlocks = [];
+                
+                // Nếu đã đăng nhập, load từ Firebase
+                if (window.authService && window.authService.isSignedIn()) {
+                    if (window.dataService) {
+                        todos = await window.dataService.loadTodos();
+                        events = await window.dataService.loadEvents();
+                        const timeBlockData = await window.dataService.loadTimeBlocks();
+                        timeBlocks = timeBlockData.timeBlocks;
+                        
+                        // Cập nhật UI mode
+                        document.querySelector('.offline-mode').style.display = 'none';
+                        document.querySelector('.online-mode').style.display = 'block';
+                        document.querySelector('.cloud-features').style.display = 'block';
+                    }
+                } else {
+                    // Load từ localStorage
+                    todos = Utils.getFromLocalStorage('todos', []);
+                    events = Utils.getFromLocalStorage('calendar-events', []);
+                    timeBlocks = Utils.getFromLocalStorage('time-blocks', []);
+                }
+                
+                const totalTodos = todos.length;
+                const completedTodos = todos.filter(todo => todo.completed).length;
+                const totalEvents = events.length;
+                const completedBlocks = timeBlocks.filter(block => block.completed).length;
+                const productivity = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
+                
+                document.getElementById('total-todos').textContent = totalTodos;
+                document.getElementById('completed-todos').textContent = completedTodos;
+                document.getElementById('total-events').textContent = totalEvents + timeBlocks.length;
+                document.getElementById('productivity').textContent = productivity + '%';
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                // Fallback to localStorage
+                const todos = Utils.getFromLocalStorage('todos', []);
+                const events = Utils.getFromLocalStorage('calendar-events', []);
+                const timeBlocks = Utils.getFromLocalStorage('time-blocks', []);
+                
+                const totalTodos = todos.length;
+                const completedTodos = todos.filter(todo => todo.completed).length;
+                const totalEvents = events.length;
+                const productivity = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
+                
+                document.getElementById('total-todos').textContent = totalTodos;
+                document.getElementById('completed-todos').textContent = completedTodos;
+                document.getElementById('total-events').textContent = totalEvents + timeBlocks.length;
+                document.getElementById('productivity').textContent = productivity + '%';
+            }
         }
         
         // Khởi tạo
         document.addEventListener('DOMContentLoaded', () => {
             loadStats();
             
-            // Cập nhật thống kê mỗi 5 giây
-            setInterval(loadStats, 5000);
+            // Lắng nghe auth state changes
+            if (window.authService) {
+                window.authService.onAuthStateChanged((user) => {
+                    loadStats(); // Reload stats when auth state changes
+                    
+                    if (user) {
+                        // Auto-migrate data when user signs in
+                        setTimeout(() => {
+                            if (window.dataService) {
+                                window.dataService.migrateFromLocalStorage();
+                            }
+                        }, 2000);
+                    }
+                });
+            }
+            
+            // Cập nhật thống kê mỗi 10 giây
+            setInterval(loadStats, 10000);
         });
     </script>
 </body>
