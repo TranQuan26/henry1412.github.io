@@ -1321,6 +1321,15 @@
             }
         }
         
+        function clearAllBlocks() {
+            if (confirm('Bạn có chắc chắn muốn xóa tất cả time blocks?')) {
+                timeBlocks = [];
+                saveTimeBlocks();
+                renderTimeBlocks();
+                Utils.showNotification('Đã xóa tất cả time blocks!', 'success');
+            }
+        }
+        
         // Tab functionality
         let currentTab = 'timeblocks';
         let pomodoroTimer = null;
@@ -1482,149 +1491,73 @@
             Utils.showNotification(`Đã tạo ${timeBlocks.length} khối thời gian!`, 'success');
         }
         
-        function renderTimeBlocks() {
-            const grid = document.getElementById('time-blocks-grid');
+        // Tab functionality
+        let currentTab = 'timeblocks';
+        let pomodoroTimer = null;
+        
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
             
-            if (timeBlocks.length === 0) {
-                grid.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">⏰</div>
-                        <h3>Chưa có khối thời gian nào</h3>
-                        <p>Hãy thiết lập thời gian và nhấn "Tạo khối thời gian" để bắt đầu!</p>
-                    </div>
-                `;
-                return;
-            }
+            // Remove active state from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
             
-            grid.innerHTML = timeBlocks.map(block => {
-                const isCurrentBlock = isCurrentTimeInBlock(block.startTime, block.endTime);
-                const hasTask = block.task && block.task.trim().length > 0;
-                const blockClass = block.completed ? 'completed' : hasTask ? 'in-progress' : '';
-                
-                return `
-                    <div class="time-block ${blockClass} ${isCurrentBlock ? 'current-time-indicator pulse' : ''}">
-                        <div class="time-block-header">
-                            <div class="time-range">
-                                ${formatTime(block.startTime)} - ${formatTime(block.endTime)}
-                            </div>
-                            <div class="time-status">
-                                <div class="status-indicator"></div>
-                                ${block.completed ? 'Hoàn thành' : hasTask ? 'Đang làm' : 'Trống'}
-                            </div>
-                        </div>
-                        
-                        <div class="time-block-content">
-                            <textarea 
-                                class="task-input ${hasTask ? 'has-content' : ''}" 
-                                placeholder="Nhập công việc cho khung thời gian này..."
-                                onchange="updateTask('${block.id}', this.value)"
-                                onkeyup="autoSave('${block.id}', this.value)"
-                            >${block.task}</textarea>
-                            
-                            <div class="time-block-actions">
-                                <div class="task-progress">
-                                    <span>${block.task ? block.task.length : 0} ký tự</span>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: ${Math.min((block.task?.length || 0) / 100 * 100, 100)}%"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="block-controls">
-                                    <button 
-                                        class="btn ${block.completed ? 'btn-secondary' : 'btn-success'} btn-small"
-                                        onclick="toggleComplete('${block.id}')"
-                                    >
-                                        ${block.completed ? '↩️ Chưa xong' : '✅ Hoàn thành'}
-                                    </button>
-                                    <button 
-                                        class="btn btn-danger btn-small"
-                                        onclick="clearTask('${block.id}')"
-                                    >
-                                        🗑️ Xóa
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
             
-            updateStats();
-        }
-        
-        function updateTask(blockId, taskValue) {
-            const block = timeBlocks.find(b => b.id === blockId);
-            if (block) {
-                block.task = taskValue;
-                saveTimeBlocks();
-            }
-        }
-        
-        const autoSave = Utils.debounce((blockId, taskValue) => {
-            updateTask(blockId, taskValue);
-            renderTimeBlocks(); // Re-render to update styling
-        }, 500);
-        
-        function toggleComplete(blockId) {
-            const block = timeBlocks.find(b => b.id === blockId);
-            if (block) {
-                block.completed = !block.completed;
-                saveTimeBlocks();
-                renderTimeBlocks();
-                Utils.showNotification(
-                    block.completed ? 'Đã đánh dấu hoàn thành!' : 'Đã bỏ đánh dấu hoàn thành!',
-                    'success'
-                );
-            }
-        }
-        
-        function clearTask(blockId) {
-            if (confirm('Bạn có chắc chắn muốn xóa công việc trong khối thời gian này?')) {
-                const block = timeBlocks.find(b => b.id === blockId);
-                if (block) {
-                    block.task = '';
-                    block.completed = false;
-                    saveTimeBlocks();
-                    renderTimeBlocks();
-                    Utils.showNotification('Đã xóa công việc!', 'success');
-                }
-            }
-        }
-        
-        function clearAllTasks() {
-            if (confirm('Bạn có chắc chắn muốn xóa TẤT CẢ công việc và khối thời gian?')) {
-                timeBlocks = [];
-                saveTimeBlocks();
-                renderTimeBlocks();
-                Utils.showNotification('Đã xóa tất cả!', 'success');
-            }
-        }
-        
-        function updateStats() {
-            const total = timeBlocks.length;
-            const completed = timeBlocks.filter(block => block.completed).length;
-            const withTasks = timeBlocks.filter(block => block.task && block.task.trim().length > 0).length;
-            const pending = withTasks - completed;
-            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+            // Activate tab button
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
             
-            document.getElementById('total-blocks').textContent = total;
-            document.getElementById('completed-blocks').textContent = completed;
-            document.getElementById('pending-blocks').textContent = Math.max(0, pending);
-            document.getElementById('progress-percent').textContent = progress + '%';
+            currentTab = tabName;
+            
+            // Initialize Pomodoro timer if switching to pomodoro tab
+            if (tabName === 'pomodoro' && !pomodoroTimer) {
+                initPomodoroTimer();
+            }
         }
         
-        // Auto-refresh current time indicator every minute
-        setInterval(() => {
-            if (timeBlocks.length > 0) {
-                renderTimeBlocks();
+        function initPomodoroTimer() {
+            try {
+                pomodoroTimer = new PomodoroTimer('pomodoro-container');
+            } catch (error) {
+                console.error('Error initializing Pomodoro timer:', error);
+                Utils.showNotification('Có lỗi khi khởi tạo Pomodoro timer!', 'error');
             }
-        }, 60000); // Update every minute
+        }
         
-        // Initialize
+        // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
-            loadTimeBlocks();
-            if (timeBlocks.length > 0) {
-                renderTimeBlocks();
+            // Render time blocks
+            renderTimeBlocks();
+            
+            // Setup tab event listeners
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    switchTab(btn.dataset.tab);
+                });
+            });
+            
+            // Check for Pomodoro hash in URL
+            if (window.location.hash === '#pomodoro') {
+                switchTab('pomodoro');
+            }
+            
+            // Auto-update time blocks every minute
+            setInterval(() => {
+                if (currentTab === 'timeblocks') {
+                    renderTimeBlocks();
+                }
+            }, 60000);
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pomodoroTimer) {
+                pomodoroTimer.destroy();
             }
         });
     </script>
