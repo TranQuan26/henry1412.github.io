@@ -45,17 +45,107 @@ class FirebaseAuthService {
         });
     }
     
-    // Đăng nhập với Google
+    // Kiểm tra Firebase ready
+    checkFirebaseStatus() {
+        const status = {
+            firebaseApp: !!window.firebaseApp,
+            firebaseAuth: !!window.firebaseAuth,
+            firebaseDb: !!window.firebaseDb,
+            firebaseUtils: !!window.FirebaseUtils,
+            googleProvider: !!window.googleProvider,
+            authService: !!window.authService,
+            dataService: !!window.dataService
+        };
+        
+        console.log('🔍 Firebase Status Check:', status);
+        
+        const ready = Object.values(status).every(Boolean);
+        console.log(ready ? '✅ All Firebase services ready' : '❌ Some Firebase services not ready');
+        
+        return { status, ready };
+    }
+    
+    // Đợi Firebase sẵn sàng
+    async waitForFirebaseReady(timeout = 10000) {
+        const startTime = Date.now();
+        
+        return new Promise((resolve, reject) => {
+            const check = () => {
+                const { ready } = this.checkFirebaseStatus();
+                
+                if (ready) {
+                    console.log('✅ Firebase is ready!');
+                    resolve(true);
+                } else if (Date.now() - startTime > timeout) {
+                    console.error('❌ Firebase readiness timeout');
+                    reject(new Error('Firebase readiness timeout'));
+                } else {
+                    setTimeout(check, 100);
+                }
+            };
+            
+            check();
+        });
+    }
+    
+    // Đăng nhập với Google (cải thiện)
     async signInWithGoogle() {
         try {
+            console.log('🔍 Starting Google sign in...');
+            
+            // Đợi Firebase sẵn sàng
+            await this.waitForFirebaseReady(5000);
+            
+            console.log('🔑 Firebase ready, attempting Google sign in...');
             const result = await window.FirebaseUtils.signInWithGoogle();
             const user = result.user;
             
-            Utils.showNotification(`Chào mừng ${user.displayName}!`, 'success');
+            console.log('✅ Google sign in successful:', user.email);
+            Utils.showNotification(`Chào mừng ${user.displayName || user.email}!`, 'success');
             return user;
         } catch (error) {
-            console.error('Google sign in error:', error);
-            Utils.showNotification('Đăng nhập Google thất bại!', 'error');
+            console.error('❌ Google sign in error:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+            
+            let message = 'Đăng nhập Google thất bại!';
+            
+            switch (error.code) {
+                case 'auth/popup-blocked':
+                    message = 'Popup bị chặn! Vui lòng cho phép popup và thử lại.';
+                    break;
+                case 'auth/popup-closed-by-user':
+                    message = 'Bạn đã đóng cửa sổ đăng nhập.';
+                    break;
+                case 'auth/cancelled-popup-request':
+                    message = 'Yêu cầu đăng nhập bị hủy.';
+                    break;
+                case 'auth/network-request-failed':
+                    message = 'Lỗi kết nối mạng! Kiểm tra internet và thử lại.';
+                    break;
+                case 'auth/internal-error':
+                    message = 'Lỗi hệ thống Firebase! Thử lại sau.';
+                    break;
+                case 'auth/invalid-api-key':
+                    message = 'Firebase API key không hợp lệ!';
+                    break;
+                case 'auth/app-not-authorized':
+                    message = 'Domain chưa được authorize trong Firebase Console!';
+                    break;
+                default:
+                    if (error.message.includes('Firebase readiness timeout')) {
+                        message = 'Firebase chưa sẵn sàng! Vui lòng refresh trang và thử lại.';
+                    } else if (error.message.includes('Firebase not initialized')) {
+                        message = 'Firebase chưa được khởi tạo! Vui lòng refresh trang.';
+                    } else if (error.message.includes('Google provider not configured')) {
+                        message = 'Google provider chưa được cấu hình!';
+                    }
+            }
+            
+            Utils.showNotification(message, 'error');
+            
+            // Log chi tiết cho debug
+            this.checkFirebaseStatus();
             throw error;
         }
     }
@@ -266,11 +356,30 @@ class FirebaseAuthService {
     
     // Xử lý đăng nhập Google từ modal
     async handleGoogleSignIn() {
+        const button = document.querySelector('.google-btn');
+        const originalText = button?.innerHTML;
+        
         try {
+            // Show loading state
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;"><div style="width: 16px; height: 16px; border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>Đang đăng nhập...</div>';
+            }
+            
+            console.log('🚀 Google sign in initiated from modal');
             await this.signInWithGoogle();
+            
+            console.log('✅ Modal Google sign in successful');
             document.querySelector('.auth-modal')?.remove();
         } catch (error) {
-            console.error('Google sign in failed:', error);
+            console.error('❌ Modal Google sign in failed:', error);
+            // Don't show additional notification as signInWithGoogle already shows one
+        } finally {
+            // Restore button state
+            if (button && originalText) {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
         }
     }
     

@@ -90,6 +90,8 @@
                 <button class="btn btn-success" onclick="testGoogleAuth()">🔐 Test Google Login</button>
                 <button class="btn btn-warning" onclick="authService?.showAuthModal()">📝 Show Auth Modal</button>
                 <button class="btn btn-secondary" onclick="authService?.signOut()">🚪 Sign Out</button>
+                <button class="btn btn-info" onclick="FirebaseDebug?.checkSetup()">🔍 Debug Setup</button>
+                <button class="btn btn-danger" onclick="FirebaseDebug?.testGoogleSignIn()">🧪 Debug Login</button>
             </div>
         </div>
 
@@ -124,6 +126,7 @@
     <script type="module" src="../assets/js/firebase-config.js"></script>
     <script src="../assets/js/firebase-auth.js"></script>
     <script src="../assets/js/firebase-data.js"></script>
+    <script src="../assets/js/firebase-debug.js"></script>
 
     <script>
         // Capture console logs

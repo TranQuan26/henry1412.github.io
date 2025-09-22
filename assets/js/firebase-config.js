@@ -56,6 +56,11 @@ const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
 
+// Cấu hình để force account selection
+googleProvider.setCustomParameters({
+    prompt: 'select_account'
+});
+
 // Export để sử dụng trong các file khác
 window.firebaseApp = app;
 window.firebaseAuth = auth;
