@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý công việc - TaskManager</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        .todo-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .todo-input-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+        
+        .todo-input {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .todo-input input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .todo-input input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        .priority-select {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: white;
+            font-size: 1rem;
+            min-width: 120px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-total { color: #667eea; }
+        .stat-completed { color: #27ae60; }
+        .stat-pending { color: #e74c3c; }
+        .stat-high { color: #f39c12; }
+        
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .todo-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .todo-item {
+            background: white;
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+            position: relative;
+        }
+        
+        .todo-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .todo-item.completed {
+            opacity: 0.7;
+            border-left-color: #27ae60;
+        }
+        
+        .todo-item.priority-high {
+            border-left-color: #e74c3c;
+        }
+        
+        .todo-item.priority-medium {
+            border-left-color: #f39c12;
+        }
+        
+        .todo-item.priority-low {
+            border-left-color: #3498db;
+        }
+        
+        .todo-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .todo-checkbox {
+            margin-top: 0.25rem;
+            transform: scale(1.2);
+        }
+        
+        .todo-text {
+            flex: 1;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+        }
+        
+        .todo-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .priority-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .priority-high { background: #fee2e2; color: #dc2626; }
+        .priority-medium { background: #fef3c7; color: #d97706; }
+        .priority-low { background: #dbeafe; color: #2563eb; }
+        
+        .todo-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #7f8c8d;
+        }
+        
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .todo-input {
+                flex-direction: column;
+            }
+            
+            .filters {
+                justify-content: center;
+            }
+            
+            .todo-content {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="logo">
+                🎯 TaskManager
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html">🏠 Trang chủ</a></li>
+                <li><a href="../pages/todo.html">📝 Công việc</a></li>
+                <li><a href="../pages/calendar.html">📅 Lịch</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="todo-container">
+            <div class="page-header">
+                <h1 class="page-title">📝 Quản lý công việc</h1>
+                <p class="page-subtitle">Tổ chức và theo dõi các công việc của bạn</p>
+            </div>
+
+            <!-- Thống kê -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number stat-total" id="total-count">0</div>
+                    <div class="stat-label">Tổng cộng</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-completed" id="completed-count">0</div>
+                    <div class="stat-label">Hoàn thành</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-pending" id="pending-count">0</div>
+                    <div class="stat-label">Còn lại</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-high" id="high-priority-count">0</div>
+                    <div class="stat-label">Ưu tiên cao</div>
+                </div>
+            </div>
+
+            <!-- Form thêm todo -->
+            <div class="todo-input-section">
+                <div class="todo-input">
+                    <input type="text" id="todo-text" placeholder="Nhập công việc mới..." maxlength="200">
+                    <select id="priority-select" class="priority-select">
+                        <option value="low">Ưu tiên thấp</option>
+                        <option value="medium">Ưu tiên trung bình</option>
+                        <option value="high">Ưu tiên cao</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addTodo()">➕ Thêm</button>
+                </div>
+                <input type="text" id="search-box" class="search-box" placeholder="🔍 Tìm kiếm công việc...">
+            </div>
+
+            <!-- Bộ lọc -->
+            <div class="filters">
+                <button class="filter-btn active" onclick="setFilter('all')">Tất cả</button>
+                <button class="filter-btn" onclick="setFilter('pending')">Chưa hoàn thành</button>
+                <button class="filter-btn" onclick="setFilter('completed')">Đã hoàn thành</button>
+                <button class="filter-btn" onclick="setFilter('high')">Ưu tiên cao</button>
+                <button class="filter-btn" onclick="setFilter('medium')">Ưu tiên trung bình</button>
+                <button class="filter-btn" onclick="setFilter('low')">Ưu tiên thấp</button>
+            </div>
+
+            <!-- Danh sách todo -->
+            <ul class="todo-list" id="todo-list">
+                <li class="empty-state" id="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h3>Chưa có công việc nào</h3>
+                    <p>Hãy thêm công việc đầu tiên để bắt đầu!</p>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../assets/js/main.js"></script>
+    <script>
+        let todos = Utils.getFromLocalStorage('todos', []);
+        let nextId = parseInt(localStorage.getItem('nextId')) || 1;
+        let currentFilter = 'all';
+        let searchQuery = '';
+        
+        function saveTodos() {
+            Utils.saveToLocalStorage('todos', todos);
+            localStorage.setItem('nextId', nextId.toString());
+        }
+        
+        function updateStats() {
+            const total = todos.length;
+            const completed = todos.filter(todo => todo.completed).length;
+            const pending = total - completed;
+            const highPriority = todos.filter(todo => todo.priority === 'high' && !todo.completed).length;
+            
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('completed-count').textContent = completed;
+            document.getElementById('pending-count').textContent = pending;
+            document.getElementById('high-priority-count').textContent = highPriority;
+        }
+        
+        function filterTodos() {
+            let filtered = todos;
+            
+            // Lọc theo trạng thái
+            if (currentFilter === 'pending') {
+                filtered = filtered.filter(todo => !todo.completed);
+            } else if (currentFilter === 'completed') {
+                filtered = filtered.filter(todo => todo.completed);
+            } else if (currentFilter === 'high' || currentFilter === 'medium' || currentFilter === 'low') {
+                filtered = filtered.filter(todo => todo.priority === currentFilter);
+            }
+            
+            // Lọc theo tìm kiếm
+            if (searchQuery) {
+                filtered = filtered.filter(todo => 
+                    todo.text.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            }
+            
+            return filtered;
+        }
+        
+        function renderTodos() {
+            const todoList = document.getElementById('todo-list');
+            const emptyState = document.getElementById('empty-state');
+            const filtered = filterTodos();
+            
+            if (filtered.length === 0) {
+                emptyState.style.display = 'block';
+                todoList.innerHTML = emptyState.outerHTML;
+                return;
+            }
+            
+            todoList.innerHTML = filtered.map(todo => {
+                const createdDate = new Date(todo.createdAt);
+                return `
+                    <li class="todo-item ${todo.completed ? 'completed' : ''} priority-${todo.priority}">
+                        <div class="todo-content">
+                            <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} 
+                                   onchange="toggleTodo(${todo.id})">
+                            <div class="todo-text">${todo.text}</div>
+                        </div>
+                        <div class="todo-meta">
+                            <span class="priority-badge priority-${todo.priority}">
+                                ${todo.priority === 'high' ? '🔴 Cao' : 
+                                  todo.priority === 'medium' ? '🟡 Trung bình' : '🟢 Thấp'}
+                            </span>
+                            <span>📅 ${Utils.formatDate(createdDate)}</span>
+                            ${todo.completedAt ? `<span>✅ ${Utils.formatDate(new Date(todo.completedAt))}</span>` : ''}
+                        </div>
+                        <div class="todo-actions">
+                            <button class="btn btn-danger btn-small" onclick="deleteTodo(${todo.id})">
+                                🗑️ Xóa
+                            </button>
+                            <button class="btn btn-primary btn-small" onclick="editTodo(${todo.id})">
+                                ✏️ Sửa
+                            </button>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+            
+            updateStats();
+        }
+        
+        function addTodo() {
+            const input = document.getElementById('todo-text');
+            const prioritySelect = document.getElementById('priority-select');
+            const text = input.value.trim();
+            const priority = prioritySelect.value;
+            
+            if (!text) {
+                Utils.showNotification('Vui lòng nhập nội dung công việc!', 'warning');
+                return;
+            }
+            
+            todos.push({
+                id: nextId++,
+                text: text,
+                priority: priority,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+            
+            input.value = '';
+            prioritySelect.value = 'low';
+            saveTodos();
+            renderTodos();
+            Utils.showNotification('Đã thêm công việc mới!', 'success');
+        }
+        
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.completed = !todo.completed;
+                if (todo.completed) {
+                    todo.completedAt = new Date().toISOString();
+                } else {
+                    delete todo.completedAt;
+                }
+                saveTodos();
+                renderTodos();
+                Utils.showNotification(
+                    todo.completed ? 'Đã đánh dấu hoàn thành!' : 'Đã bỏ đánh dấu hoàn thành!', 
+                    'success'
+                );
+            }
+        }
+        
+        function deleteTodo(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
+                todos = todos.filter(t => t.id !== id);
+                saveTodos();
+                renderTodos();
+                Utils.showNotification('Đã xóa công việc!', 'success');
+            }
+        }
+        
+        function editTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                const newText = prompt('Sửa nội dung công việc:', todo.text);
+                if (newText && newText.trim() !== todo.text) {
+                    todo.text = newText.trim();
+                    saveTodos();
+                    renderTodos();
+                    Utils.showNotification('Đã cập nhật công việc!', 'success');
+                }
+            }
+        }
+        
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderTodos();
+        }
+        
+        // Event listeners
+        document.getElementById('todo-text').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+        
+        document.getElementById('search-box').addEventListener('input', 
+            Utils.debounce(function(e) {
+                searchQuery = e.target.value;
+                renderTodos();
+            }, 300)
+        );
+        
+        // Khởi tạo
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTodos();
+        });
+    </script>
+</body>
+</html>
